@@ -27,17 +27,17 @@ def main():
     parser.add_argument("--negatives-manifest", default="manifests/negatives_librispeech.jsonl")
     parser.add_argument("--out-dir", default="data/sessions")
     parser.add_argument("--manifest-out", default="manifests/sessions_labels.jsonl")
-    parser.add_argument("--target-length-min", type=float, default=60.0)
-    parser.add_argument("--num-sessions", type=int, default=5)
-    parser.add_argument("--num-positives-per-session", type=int, default=10)
+    parser.add_argument("--target-length-min", type=float, default=10.0)
+    parser.add_argument("--num-sessions", type=int, default=3)
+    parser.add_argument("--num-positives-per-session", type=int, default=3)
     args = parser.parse_args()
 
     sr = 16000
     os.makedirs(args.out_dir, exist_ok=True)
     os.makedirs(os.path.dirname(args.manifest_out), exist_ok=True)
 
-    positives = load_manifest(args.positives-manifest if hasattr(args, "positives-manifest") else args.positives_manifest)
-    negatives = load_manifest(args.negatives-manifest if hasattr(args, "negatives-manifest") else args.negatives_manifest)
+    positives = load_manifest(args.positives_manifest if hasattr(args, "positives_manifest") else args.positives_manifest)
+    negatives = load_manifest(args.negatives_manifest if hasattr(args, "negatives_manifest") else args.negatives_manifest)
 
     with open(args.manifest_out, "w") as mf:
         for sid in range(args.num_sessions):

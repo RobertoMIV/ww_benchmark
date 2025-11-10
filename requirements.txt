@@ -1,0 +1,10 @@
+EfficientWord-Net==1.0.2
+numpy
+openwakeword
+piper-tts
+psutil
+pydub
+scipy
+soundfile
+tflite-runtime==2.14.0
+tqdm

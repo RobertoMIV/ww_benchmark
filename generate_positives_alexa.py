@@ -7,6 +7,7 @@ import subprocess
 import wave
 import numpy as np
 import librosa
+from tqdm import tqdm
 # Helper to write int16 wav
 def write_wav(path, audio, sr=16000):
     os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -112,7 +113,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--out_dir", default="data/positives", help="Output dir for positives")
     parser.add_argument("--manifest", default="manifests/positives_alexa.jsonl")
-    parser.add_argument("--num-utterances-per-voice", type=int, default=50)
+    parser.add_argument("--num-utterances-per-voice", type=int, default=5)
     parser.add_argument("--noise-dir", default="data/DEMAND", help="DEMAND root directory for noise (optional)")
     parser.add_argument("--snr-range", nargs=2, type=float, default=[5.0, 20.0],
                         help="Min and max SNR in dB for mixing noise")
@@ -133,24 +134,10 @@ def main():
 
     utt_id = 0
     # Find Piper models
-    models = ["models/en_US-amy-low.onnx",
-              "models/en_US-amy-medium.onnx",
-              "models/en_US-arctic-medium.onnx",
-              "models/en_US-bryce-medium.onnx",
-              "models/en_US-hfc_female-medium.onnx",
-              "models/en_US-hfc_male-medium.onnx",
-              "models/en_US-joe-medium.onnx",
-              "models/en_US-john-medium.onnx",
-              "models/en_US-kristin-medium.onnx",
-              "models/en_US-norman-medium.onnx",
-              "models/en_US-reza_ibrahim-medium.onnx",
-              "models/en_US-ryan-high.onnx",
-              "models/en_US-ryan-medium.onnx",
-              "models/en_US-sam-medium.onnx"
-     ]
-    print(models)
+    models = glob("models/*.onnx")
+    print(f"Generating positives using {len(models)} models")
     for model_path in models:
-        for i in range(args.num_utterances_per_voice):
+        for i in tqdm(range(args.num_utterances_per_voice), desc=f"Synthesizing for {os.path.basename(model_path)}"):
             utt_id += 1
             base_name = f"alexa_model{os.path.basename(model_path)}_{utt_id:04d}"
             clean_path = os.path.join(args.out_dir, base_name + "_clean.wav")

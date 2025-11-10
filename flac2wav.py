@@ -1,11 +1,11 @@
 import os
 import subprocess
-
+from tqdm import tqdm
 # Root folder containing the FLAC files
 root_dir = "data/LibriSpeech/audio/train-100/"
 
 for dirpath, _, filenames in os.walk(root_dir):
-    for filename in filenames:
+    for filename in tqdm(filenames):
         if filename.endswith(".flac"):
             flac_path = os.path.join(dirpath, filename)
             wav_path = os.path.splitext(flac_path)[0] + ".wav"

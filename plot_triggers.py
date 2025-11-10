@@ -79,8 +79,7 @@ def plot_session(gt_entry, triggers, out_path, tolerance=1.0, model_name="EFFICI
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--ground-truth", default="manifests/sessions_labels.jsonl", help="sessions_labels.jsonl")
-    #parser.add_argument("--predictions", default="manifests/sessions_labels_EFFICIENTWORD_triggers.jsonl", help="*_triggers.jsonl")
-    parser.add_argument("--model-name", default="EFFICIENTWORD")
+    parser.add_argument("--model-name", default="OPEN_WAKE_WORD", help="Model name for loading predictions and plot titles [e.g., EFFICIENTWORD, PORCUPINE, OPEN_WAKE_WORD, POCKET_SPHINX, , etc.]")
     parser.add_argument("--out-dir", default="plots_timeline")
     parser.add_argument("--tolerance", type=float, default=1.0)
     args = parser.parse_args()
