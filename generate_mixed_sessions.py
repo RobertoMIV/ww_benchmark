@@ -23,23 +23,26 @@ def load_manifest(path):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--positives-manifest", default="manifests/positives_alexa.jsonl")
-    parser.add_argument("--negatives-manifest", default="manifests/negatives_librispeech.jsonl")
+    parser.add_argument("--positives-manifest", default="manifests/positives_hey_ford.jsonl")
+    parser.add_argument("--negatives-manifest", default="manifests/negatives_librispeech_hey_ford.jsonl")
     parser.add_argument("--out-dir", default="data/sessions")
+    parser.add_argument("--tag", default="hey_ford")
     parser.add_argument("--manifest-out", default="manifests/sessions_labels.jsonl")
-    parser.add_argument("--target-length-min", type=float, default=10.0)
+    parser.add_argument("--target-length-min", type=float, default=60.0*24.0)
     parser.add_argument("--num-sessions", type=int, default=3)
-    parser.add_argument("--num-positives-per-session", type=int, default=3)
+    parser.add_argument("--num-positives-per-session", type=int, default=5)
     args = parser.parse_args()
+
+    manifest_out = args.manifest_out.replace(".jsonl", f"_{args.tag}.jsonl")
 
     sr = 16000
     os.makedirs(args.out_dir, exist_ok=True)
-    os.makedirs(os.path.dirname(args.manifest_out), exist_ok=True)
+    os.makedirs(os.path.dirname(manifest_out), exist_ok=True)
 
     positives = load_manifest(args.positives_manifest if hasattr(args, "positives_manifest") else args.positives_manifest)
     negatives = load_manifest(args.negatives_manifest if hasattr(args, "negatives_manifest") else args.negatives_manifest)
 
-    with open(args.manifest_out, "w") as mf:
+    with open(manifest_out, "w") as mf:
         for sid in range(args.num_sessions):
             session_audio = []
             session_events = []
@@ -74,7 +77,7 @@ def main():
                 session_events.append({
                     "start_sec": insert_start,
                     "end_sec": insert_start + dur,
-                    "tag": "alexa"
+                    "tag": args.tag
                 })
 
             out_path = os.path.join(args.out_dir, f"session_{sid:02d}.wav")

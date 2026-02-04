@@ -77,7 +77,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--librispeech-dir", default="data/LibriSpeech/audio/", help="Root of LibriSpeech wav files")
     parser.add_argument("--out-dir", default="data/negatives/librispeech")
-    parser.add_argument("--manifest", default="manifests/negatives_librispeech.jsonl")
+    parser.add_argument("--manifest", default="manifests/negatives_librispeech_hey_ford.jsonl")
     parser.add_argument("--noise-dir", default="data/DEMAND/", help="DEMAND root directory")
     parser.add_argument("--snr-range", nargs=2, type=float, default=[5.0, 20.0])
     parser.add_argument("--max-files", type=int, default=None,
@@ -122,7 +122,7 @@ def main():
             entry = {
                 "file": out_path,
                 "sample_rate": sr,
-                "keyword": "alexa",
+                "keyword": "hey_ford",
                 "events": [],  # no keyword events
                 "source": "librispeech",
                 "orig_path": src_path,
