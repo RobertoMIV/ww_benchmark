@@ -15,7 +15,7 @@ ww_benchmark/
 ├─ generate_confusables_alexa.py (WIP)
 ├─ generate_mixed_sessions.py
 ├─ generate_negatives_librispeech_demand.py
-├─ generate_positives_alexa.py
+├─ generate_positives.py
 ├─ plot_triggers.py
 └─ README.md
 ```
@@ -63,7 +63,7 @@ python -m piper.download_voices en_US-sam-medium
 
 Generate positive samples with piper-tts:
 ```console
-python generate_positives_alexa.py
+python generate_positives.py
 ```
 
 Generate negative samples with LibriSpeech and DEMAND:
