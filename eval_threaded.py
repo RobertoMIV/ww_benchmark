@@ -7,19 +7,68 @@ from typing import List, Dict, Tuple
 from tqdm import tqdm
 from engines import Engine, Engines  # <- your engines module
 from dataclasses import dataclass
+import wave
 
 @dataclass
 class Trigger:
     time_sec: float
     confidence: float = 1.0
 
+
+def to_int16_mono_16k(x: np.ndarray, sr: int, target_sr: int = 16000) -> np.ndarray:
+    """
+    Convert audio to mono int16 @ target_sr.
+    - Accepts float or int arrays, 1D or 2D (channels).
+    - If sr != target_sr, raises (keeps it strict to avoid "silent wrong" results).
+      (If you want, I can add resampling with scipy.)
+    """
+    # If multi-channel, average to mono
+    if x.ndim == 2:
+        # common shapes: (n, channels) or (channels, n)
+        if x.shape[0] in (1, 2) and x.shape[1] > x.shape[0]:
+            # likely (channels, n)
+            x = x.mean(axis=0)
+        else:
+            # likely (n, channels)
+            x = x.mean(axis=1)
+
+    if sr != target_sr:
+        raise ValueError(
+            f"WAV sample rate is {sr} Hz but expected {target_sr} Hz. "
+            f"Please provide 16kHz audio or ask me to add resampling."
+        )
+
+    # Convert dtype to int16 like the mic stream (pyaudio.paInt16)
+    if np.issubdtype(x.dtype, np.floating):
+        # assume float in [-1, 1] (typical)
+        x = np.clip(x, -1.0, 1.0)
+        x = (x * 32767.0).astype(np.int16)
+    elif x.dtype == np.int16:
+        pass
+    else:
+        # int32/int24 packed/etc -> scale down safely
+        info = np.iinfo(x.dtype)
+        x = (x.astype(np.float32) / max(abs(info.min), info.max))
+        x = np.clip(x, -1.0, 1.0)
+        x = (x * 32767.0).astype(np.int16)
+
+    return x
+
+
 # --- Helper: read wav ---
-import wave
 def read_wav(path):
-    with wave.open(path, "rb") as wf:
-        sr = wf.getframerate()
-        data = np.frombuffer(wf.readframes(wf.getnframes()), dtype=np.int16)
-    return data, sr
+    """
+    Load wav using soundfile if available, else scipy.io.wavfile.
+    Returns: (audio_array, sample_rate)
+    """
+    try:
+        import soundfile as sf
+        x, sr = sf.read(path, always_2d=False)
+        return x, sr
+    except Exception:
+        from scipy.io import wavfile
+        sr, x = wavfile.read(path)
+        return x, sr
 
 
 # --- Resource monitor thread ---
@@ -131,9 +180,9 @@ def evaluate_engine(engine, manifest, sr, hop_len, tolerance=1.0):
 def process_audio(engine: Engine, wav_path: str, sr: int, hop_length: int):
     """Stream through audio, call engine.process(), collect trigger times."""
     audio, s = read_wav(wav_path)
+    audio = to_int16_mono_16k(audio, s, sr)
     assert s == sr, f"Expected {sr}, got {s}"
-    frame_len = engine.frame_length(type(engine))
-    hop_len = hop_length
+    frame_len = engine.frame_length()
     triggers = []
 
     # Slide through audio
@@ -141,11 +190,11 @@ def process_audio(engine: Engine, wav_path: str, sr: int, hop_length: int):
     i = 0
     pbar = tqdm(total=num_samples)
     #while i + frame_len <= num_samples:
-    for i in range(0, num_samples - frame_len + 1, hop_len):
+    for i in range(0, num_samples - frame_len + 1, hop_length):
         frame = audio[i:i + frame_len]
         if engine.process(frame):
             triggers.append(Trigger(i / sr))
-        pbar.update(hop_len)
+        pbar.update(hop_length)
     pbar.close()
 
     return triggers
@@ -153,11 +202,11 @@ def process_audio(engine: Engine, wav_path: str, sr: int, hop_length: int):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--sessions-manifest", default="manifests/sessions_labels.jsonl", help="Path to sessions_labels.jsonl")
-    parser.add_argument("--keyword", default="alexa")
+    parser.add_argument("--keyword", default="hey_ford", help="Keyword to detect")
     parser.add_argument("--sensitivity", type=float, default=0.5)
     parser.add_argument("--model-path", default=None)
     parser.add_argument("--sample-rate", type=int, default=16000)
-    parser.add_argument("--hop-length", type=int, default=512)
+    parser.add_argument("--hop-length", type=int, default=1280)
     parser.add_argument("--tolerance", type=float, default=1.0)
     parser.add_argument("--output-json", default="benchmark_summary.json")
     args = parser.parse_args()
@@ -176,8 +225,8 @@ def main():
             engine = Engine.create(engine_type, args.keyword, args.sensitivity)
 
 
-
-        manifest = [json.loads(line) for line in open(args.sessions-manifest if hasattr(args,"sessions-manifest") else args.sessions_manifest)]
+        sessions_manifest = args.sessions_manifest.replace(".jsonl", f"_{args.keyword}.jsonl")
+        manifest = [json.loads(line) for line in open(sessions_manifest if hasattr(args,"sessions_manifest") else args.sessions_manifest)]
 
         print(f"Evaluating {len(manifest)} files...")
         metrics, triggers_per_file = evaluate_engine(engine, manifest, args.sample_rate, args.hop_length, args.tolerance)
@@ -185,11 +234,11 @@ def main():
         for k,v in metrics.items():
             print(f"{k:35s}: {v}")
 
-        out_log = os.path.splitext(args.sessions_manifest)[0] + f"_{engine_type.name}_triggers.jsonl"
+        out_log = os.path.splitext(sessions_manifest)[0] + f"_{engine_type.name}_triggers.jsonl"
         with open(out_log, "w") as f:
             for file, triggers in triggers_per_file.items():
                 f.write(json.dumps({"file": file, "triggers": [t.__dict__ for t in triggers]}) + "\n")
-        out_log_resources = os.path.splitext(args.sessions_manifest)[0] + f"_{engine_type.name}_resources.jsonl"
+        out_log_resources = os.path.splitext(sessions_manifest)[0] + f"_{engine_type.name}_resources.jsonl"
         
         with open(out_log_resources, "w") as f:
             f.write(json.dumps(metrics, indent=2))

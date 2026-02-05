@@ -111,7 +111,7 @@ def synthesize_piper(piper_bin, model, text, out_wav, length_scale=1.0):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--out_dir", default="data/positives", help="Output dir for positives")
+    parser.add_argument("--out_dir", default="data/positives_hey_ford", help="Output dir for positives")
     parser.add_argument("--manifest", default="manifests/positives.jsonl")
     parser.add_argument("--keyword", default="hey_ford", help="Keyword to synthesize")
     parser.add_argument("--num-utterances-per-voice", type=int, default=5)
@@ -121,7 +121,7 @@ def main():
     parser.add_argument("--sample-rate", type=int, default=16000)
     args = parser.parse_args()
 
-    outdir = args.out_dir + "_" + args.keyword
+    outdir = args.out_dir
     manifest_out = args.manifest.replace(".jsonl", f"_{args.keyword}.jsonl")
 
     random.seed(42)
@@ -191,7 +191,7 @@ def main():
             manifest_f.write(json.dumps(event) + "\n")
 
     manifest_f.close()
-    print(f"Done. Wrote manifest to {args.manifest}")
+    print(f"Done. Wrote manifest to {manifest_out}")
 
 
 if __name__ == "__main__":
